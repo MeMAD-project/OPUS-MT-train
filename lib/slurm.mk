@@ -20,9 +20,9 @@ endif
 %.submit:
 	mkdir -p ${WORKDIR}
 	echo '#!/bin/bash -l' > $@
-	echo '#SBATCH -J "${LANGPAIRSTR}-${DATASET}-${@:.submit=}"' >>$@
-	echo '#SBATCH -o ${LANGPAIRSTR}-${DATASET}-${@:.submit=}.out.%j' >> $@
-	echo '#SBATCH -e ${LANGPAIRSTR}-${DATASET}-${@:.submit=}.err.%j' >> $@
+	echo '#SBATCH -J "$(subst -,,${LANGPAIRSTR})${@:.submit=}"' >>$@
+	echo '#SBATCH -o $(subst -,,${LANGPAIRSTR})${@:.submit=}.out.%j' >> $@
+	echo '#SBATCH -e $(subst -,,${LANGPAIRSTR})${@:.submit=}.err.%j' >> $@
 	echo '#SBATCH --mem=${HPC_MEM}' >> $@
 	echo '#SBATCH --exclude=r18g08' >> $@
 ifdef EMAIL
@@ -32,6 +32,9 @@ endif
 	echo '#SBATCH -n 1' >> $@
 	echo '#SBATCH -N 1' >> $@
 	echo '#SBATCH -p ${HPC_GPUQUEUE}' >> $@
+ifeq (${shell hostname -d 2>/dev/null},mahti.csc.fi)
+	echo '#SBATCH --account=${CSCPROJECT}' >> $@
+endif
 ifeq (${shell hostname --domain 2>/dev/null},bullx)
 	echo '#SBATCH --account=${CSCPROJECT}' >> $@
 	echo '#SBATCH --gres=gpu:${GPU}:${NR_GPUS},nvme:${HPC_DISK}' >> $@
@@ -61,13 +64,16 @@ endif
 %.submitcpu:
 	mkdir -p ${WORKDIR}
 	echo '#!/bin/bash -l' > $@
-	echo '#SBATCH -J "${@:.submitcpu=}"' >>$@
-	echo '#SBATCH -o ${@:.submitcpu=}.out.%j' >> $@
-	echo '#SBATCH -e ${@:.submitcpu=}.err.%j' >> $@
+	echo '#SBATCH -J "$(subst -,,${LANGPAIRSTR})${@:.submitcpu=}"' >>$@
+	echo '#SBATCH -o $(subst -,,${LANGPAIRSTR})${@:.submitcpu=}.out.%j' >> $@
+	echo '#SBATCH -e $(subst -,,${LANGPAIRSTR})${@:.submitcpu=}.err.%j' >> $@
 	echo '#SBATCH --mem=${HPC_MEM}' >> $@
 ifdef EMAIL
 	echo '#SBATCH --mail-type=END' >> $@
 	echo '#SBATCH --mail-user=${EMAIL}' >> $@
+endif
+ifeq (${shell hostname -d 2>/dev/null},mahti.csc.fi)
+	echo '#SBATCH --account=${CSCPROJECT}' >> $@
 endif
 ifeq (${shell hostname --domain 2>/dev/null},bullx)
 	echo '#SBATCH --account=${CSCPROJECT}' >> $@

@@ -52,10 +52,12 @@ endif
 ## - use only the latest backtranslations
 ##   if such a subdir exists
 
-ifneq (${wildcard backtranslate/${TRG}-${SRC}/latest},)
-  BACKTRANS_DIR = backtranslate/${TRG}-${SRC}/latest
+BACKTRANS_HOME = backtranslate
+
+ifneq (${wildcard ${BACKTRANS_HOME}/${TRG}-${SRC}/latest},)
+  BACKTRANS_DIR = ${BACKTRANS_HOME}/${TRG}-${SRC}/latest
 else
-  BACKTRANS_DIR = backtranslate/${TRG}-${SRC}
+  BACKTRANS_DIR = ${BACKTRANS_HOME}/${TRG}-${SRC}
 endif
 
 ## TODO: make it possible to select only parts of the BT data
@@ -567,7 +569,7 @@ ifneq (${TESTSET},${DEVSET})
 	  ${MAKE} CLEAN_TEST_SRC=${TESTSET_DIR}/${TESTSET}.${SRCEXT}.${PRE}.gz \
 		  CLEAN_TEST_TRG=${TESTSET_DIR}/${TESTSET}.${TRGEXT}.${PRE}.gz \
 	  add-to-test-data; \
-	else \
+	elif [ ! -e $@ ]; then \
 	  for s in ${SRCLANGS}; do \
 	    for t in ${TRGLANGS}; do \
 	      if [ ! `echo "$$s-$$t $$t-$$s" | egrep '${SKIP_LANGPAIRS}' | wc -l` -gt 0 ]; then \
@@ -584,6 +586,9 @@ ifneq (${TESTSET},${DEVSET})
 	    echo ""                                                >> ${dir $@}/README.md; \
 	    echo "testset = top ${TESTSIZE} lines of $@.shuffled!" >> ${dir $@}/README.md; \
 	  fi \
+	else \
+	  echo "test set $@ exists already! Don't overwrite!"; \
+	  echo "TODO: should we touch it?"; \
 	fi
 else
 	mkdir -p ${dir $@}
@@ -608,12 +613,15 @@ add-to-test-data: ${CLEAN_TEST_SRC}
 	@echo "* ${LANGPAIR}: ${TESTSET}" >> ${dir ${TEST_SRC}}README.md
 ifeq (${USE_TARGET_LABELS},1)
 	@echo "more than one target language";
+	@echo "${ZCAT} ${CLEAN_TEST_SRC} | sed 's/^/>>${TRG}<< /' >> ${TEST_SRC}" 
 	@${ZCAT} ${CLEAN_TEST_SRC} 2>/dev/null |\
 	sed "s/^/>>${TRG}<< /" >> ${TEST_SRC}
 else
 	@echo "only one target language"
+	@echo "${ZCAT} ${CLEAN_TEST_SRC} >> ${TEST_SRC}" 
 	@${ZCAT} ${CLEAN_TEST_SRC} 2>/dev/null >> ${TEST_SRC}
 endif
+	@echo "${ZCAT} ${CLEAN_TEST_TRG} >> ${TEST_TRG}" 
 	@${ZCAT} ${CLEAN_TEST_TRG} 2>/dev/null >> ${TEST_TRG}
 
 

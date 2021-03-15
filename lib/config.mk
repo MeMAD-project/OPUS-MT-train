@@ -3,6 +3,11 @@
 # model configurations
 #
 
+
+## name of the model-specific configuration file
+MODELCONFIG ?= config.mk
+
+
 ## various ways of setting the model languages
 
 ## (1) explicitly set source and target languages, for example:
@@ -23,8 +28,10 @@ endif
 
 
 ## final default is sv-fi
-SRCLANGS ?= sv
-TRGLANGS ?= fi
+## NEW: don't do this ... can create confusion ...
+##
+# SRCLANGS ?= sv
+# TRGLANGS ?= fi
 
 
 ## set SRC and TRG unless they are specified already
@@ -116,7 +123,9 @@ endif
 ## in multi-target models
 ifneq (${words ${TRGLANGS}},1)
   USE_TARGET_LABELS = 1
+  TARGET_LABELS ?= $(patsubst %,>>%<<,${TRGLANGS})
 endif
+
 
 ## size of dev data, test data and BPE merge operations
 ## NEW default size = 2500 (keep more for training for small languages)
@@ -252,7 +261,12 @@ USE_REST_DEVDATA ?= 1
 TUNE_SRC ?= ${SRC}
 TUNE_TRG ?= ${TRG}
 
+TUNE_DOMAIN         ?= OpenSubtitles
+TUNE_FIT_DATA_SIZE  ?= 1000000
+
 TUNE_VALID_FREQ     ?= 1000
+TUNE_DISP_FREQ      ?= 1000
+TUNE_SAVE_FREQ      ?= 1000
 TUNE_EARLY_STOPPING ?= 5
 TUNE_GPUJOB_SUBMIT  ?= 
 
@@ -373,7 +387,7 @@ MODEL_DECODER    = ${MODEL_FINAL}.decoder.yml
 ## marian_vocab from training data
 
 ifeq ($(USE_SPM_VOCAB),1)
-  MODEL_VOCAB     = ${WORKDIR}/${MODEL}.vocab
+  MODEL_VOCAB     = ${WORKDIR}/${MODEL}.vocab.yml
   MODEL_SRCVOCAB  = ${WORKDIR}/${MODEL}.src.vocab
   MODEL_TRGVOCAB  = ${WORKDIR}/${MODEL}.trg.vocab
 else
@@ -484,7 +498,7 @@ endif
 ## TODO: is it OK to delete LOCAL_TRAIN data?
 
 .PHONY: config local-config
-config local-config: ${WORKDIR}/config.mk
+config local-config: ${WORKDIR}/${MODELCONFIG}
 
 SMALLEST_TRAINSIZE = 10000
 SMALL_TRAINSIZE    = 100000
@@ -492,7 +506,7 @@ MEDIUM_TRAINSIZE   = 500000
 LARGE_TRAINSIZE    = 1000000
 LARGEST_TRAINSIZE  = 10000000
 
-${WORKDIR}/config.mk:
+${WORKDIR}/${MODELCONFIG}:
 	mkdir -p ${dir $@}
 	if [ -e ${TRAIN_SRC}.clean.${PRE_SRC}${TRAINSIZE}.gz ]; then \
 	  ${MAKE} ${TRAIN_SRC}.clean.${PRE_SRC}${TRAINSIZE}.charfreq \
@@ -588,6 +602,9 @@ endif
 	echo "USE_REST_DEVDATA  = ${USE_REST_DEVDATA}"   >> $@
 ifdef USE_TARGET_LABELS
 	echo "USE_TARGET_LABELS = ${USE_TARGET_LABELS}"  >> $@
+endif
+ifdef USE_SPM_VOCAB
+	echo "USE_SPM_VOCAB = ${USE_SPM_VOCAB}"  >> $@
 endif
 
 
